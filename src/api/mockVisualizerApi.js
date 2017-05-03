@@ -2,7 +2,7 @@ const delay = 1000;
 
 const tracks = [
   {
-    url: 'http://localhost:8080/audio/07 Rejoice.flac',
+    src: 'http://localhost:8080/audio/Rejoice.wav',
     title: 'Rejoice',
     artist: 'Julien Baker',
     album: 'Sprained Ankled',

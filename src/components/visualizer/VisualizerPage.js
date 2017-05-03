@@ -2,8 +2,11 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
-import KeyHandler, { KEYDOWN } from 'react-key-handler';
-import * as visualizerActions  from "../../actions/visualizerActions";
+/* TODO: react-key-handler uses deprecated React.PropTypes */
+// import KeyHandler, { KEYDOWN } from 'react-key-handler';
+import AudioVisualizer from './AudioVisualizer';
+import Visualizer from '../common/Visualizer';
+import * as visualizerActions  from '../../actions/visualizerActions';
 import logo from '../logo.svg';
 
 /*
@@ -26,20 +29,39 @@ class VisualizerPage extends Component {
   constructor(props, context) {
     super(props, context);
 
-    this.togglePlayback = this.togglePlayback.bind(this);
     this.stopPropagation = this.stopPropagation.bind(this);
-  }
-
-  togglePlayback() {
-    this.props.actions.togglePlayback();
+    this.onRenderStyle = this.onRenderStyle.bind(this);
+    this.onRenderText = this.onRenderText.bind(this);
+    this.onRenderTime = this.onRenderTime.bind(this);
   }
 
   stopPropagation(e) {
     e.stopPropagation();
   }
 
+  onRenderStyle (context) {
+
+  }
+
+  onRenderText (context) {
+
+  }
+
+  onRenderTime (context) {
+
+  }
+
   render() {
     const { tracks } = this.props;
+    const options = {
+      autoplay: false,
+    };
+    const extensions = {
+      renderStyle: this.onRenderStyle,
+      renderText: this.onRenderText,
+      renderTime: this.onRenderTime,
+    };
+    /*
     const keyHandlers = [
       [' ', this.togglePlayback],
     ].map(([key, handler], i) => (
@@ -50,16 +72,21 @@ class VisualizerPage extends Component {
         onKeyHandle={handler}
       />
     ));
-
+        {keyHandlers}
+    */
+// TODO: fix tracks && logic
     return (
-      <div className="App" onClick={this.togglePlayback}>
-        <div className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h2>Welcome to React</h2>
-        </div>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
+      <div className="App">
+        <img src={logo} className="App-logo" alt="logo" />
+        {tracks[0] &&
+          <Visualizer
+            className="audio-visualizer"
+            model={tracks[0]}
+            options={options}
+            width="800px"
+            height="400px"
+          />
+        }
       </div>
     );
   }
@@ -68,7 +95,6 @@ class VisualizerPage extends Component {
 VisualizerPage.propTypes = {
   tracks: PropTypes.array.isRequired,
   actions: PropTypes.object.isRequired,
-  playing: PropTypes.object,
   currentTrack: PropTypes.object,
 };
 
