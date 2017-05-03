@@ -1,0 +1,83 @@
+:local(.audiovisual) {
+    position: relative;
+    overflow: hidden;
+
+    &:not(.kicking) {
+        transition: background-color 0.3s ease;
+    }
+
+    @duration-av: 85ms;
+
+    .freq {
+        position: absolute;
+        height: 30%;
+        bottom: 0;
+        transform-origin: center bottom;
+        transition: transform @duration-av linear;
+    }
+
+    .progressContainer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 0.5%;
+
+        .progress {
+            height: 100%;
+            transition: width 0.2s linear;
+        }
+    }
+
+    .waveZero {
+        position: absolute;
+        top: 49.75%;
+        left: 0;
+        right: 0;
+        height: 0.5%;
+    }
+
+    .fadeOutScale {
+        visibility: hidden;
+
+        &.fadeOutScale-appear, &.fadeOutScale-enter {
+            visibility: visible;
+            opacity: 1;
+            transform: scale(1, 1);
+
+            &.fadeOutScale-appear-active, &.fadeOutScale-enter-active {
+                opacity: 0;
+                transform: scale(1.5, 1.5);
+                transition: all 0.5s ease;
+            }
+        }
+    }
+
+    .play {
+        @play-height: 10vh;
+        @play-width: 0.8666 * @play-height;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-top: -@play-height / 2;
+        margin-left: -@play-width / 2;
+        width: 0;
+        height: 0;
+        border-top: @play-height / 2 solid transparent;
+        border-bottom: @play-height / 2 solid transparent;
+        border-left: @play-width solid;
+    }
+
+    .pause {
+        @pause-size: 10vh;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-top: -@pause-size / 2;
+        margin-left: -@pause-size / 2;
+        width: @pause-size / 4;
+        height: @pause-size;
+        border-left: @pause-size / 4 solid;
+        border-right: @pause-size / 4 solid;
+    }
+}
