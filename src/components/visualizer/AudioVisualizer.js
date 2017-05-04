@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
+/*
 const tmp = {
   playing: false,
   updating: true,
@@ -20,6 +21,7 @@ const tmp = {
   textColor: 'rgba(100%, 100%, 100%, 0.8)',
   altColor: 'rgba(100%, 100%, 100%, 0.1)',
 }
+*/
 
 class AudioVisualizer extends Component {
 

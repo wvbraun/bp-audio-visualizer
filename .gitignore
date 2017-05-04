@@ -26,7 +26,7 @@ pids
 
 # MISC
 .DS_Store
-.env
+# .env
 .grunt              # GRUNT INTERMEDIATE STORAGE
 .node_repl_history  # OPTIONAL REPL HISTORY
 .npm                # OPTIONAL NPM CACHE DIRECTORY

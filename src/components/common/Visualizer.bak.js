@@ -13,16 +13,14 @@ const STATES = [
 
 const OPTIONS_ANALYSER = {
   smoothingTime: 0.6,
-  fftSize: 512,
-  minDecibels: -140,
-  maxDecibels: 0,
+  fftSize: 512
 };
 
 const OPTIONS_DEFAULT = {
   autoplay: false,
-  shadowBlur: 60, //20,
+  shadowBlur: 20,
   shadowColor: '#ffffff',
-  barColor: '#c3383b' /* '#cafdff' */,
+  barColor: '#cafdff',
   barWidth: 2,
   barHeight: 2,
   barSpacing: 7,
@@ -55,13 +53,13 @@ class Visualizer extends Component {
     this._setCanvasContext = this._setCanvasContext.bind(this);
     this._setContext = this._setContext.bind(this);
     this._setAnalyser = this._setAnalyser.bind(this);
-    this._setSourceNode = this._setSourceNode.bind(this);
+    this._setBufferSourceNode = this._setBufferSourceNode.bind(this);
     this._setRequestAnimationFrame = this._setRequestAnimationFrame.bind(this);
     this._setCanvasStyles = this._setCanvasStyles.bind(this);
     this._onChange = this._onChange.bind(this);
-    this._onResize = this._onResize.bind(this);
     this._onResolvePlayState = this._onResolvePlayState.bind(this);
     this._onAudioLoad = this._onAudioLoad.bind(this);
+    this._httpGet = this._httpGet.bind(this);
     this._onAudioPause = this._onAudioPause.bind(this);
     this._onAudioStop = this._onAudioStop.bind(this);
     this._onAudioPlay = this._onAudioPlay.bind(this);
@@ -75,8 +73,8 @@ class Visualizer extends Component {
   }
 
   componentWillMount () {
-    window.addEventListener('resize', this._onResize, true);
-    this._setContext().then(() => {
+    this._setContext()
+    .then(() => {
       this._setAnalyser();
     }).then(() => {
       this._setFrequencyData();
@@ -88,8 +86,9 @@ class Visualizer extends Component {
   }
 
   componentDidMount () {
-    this._extend().then(() => {
-      this._setSourceNode();
+    this._extend()
+    .then(() => {
+      this._setBufferSourceNode();
     }).then(() => {
       this._setCanvasContext();
     }).then(() => {
@@ -118,7 +117,8 @@ class Visualizer extends Component {
   }
 
   componentWillUnmount () {
-    this.state.ctx.close();
+    const { ctx } = this.state;
+    ctx.close();
   }
 
   /**
@@ -167,7 +167,7 @@ class Visualizer extends Component {
   * @private
   */
   _setCanvasContext () {
-    const canvasCtx = this.canvas.getContext('2d');
+    const canvasCtx = this.refs.canvas.getContext('2d');
 
     return new Promise((resolve, reject) => {
       this.setState({ canvasCtx }, () => {
@@ -193,7 +193,7 @@ class Visualizer extends Component {
           return resolve();
         });
       } catch (e) {
-          return reject(error);
+        return reject(error);
       }
     });
   }
@@ -213,8 +213,6 @@ class Visualizer extends Component {
 
       analyser.smoothingTimeConstant = OPTIONS_ANALYSER.smoothingTime;
       analyser.fftSize = OPTIONS_ANALYSER.fftSize;
-      analyser.minDecibels = OPTIONS_ANALYSER.minDecibels;
-      analyser.maxDecibels = OPTIONS_ANALYSER.maxDecibels;
 
       this.setState({ analyser }, () => {
         return resolve();
@@ -243,16 +241,17 @@ class Visualizer extends Component {
 
   /**
   * @description
-  * Set media source buffer and connect processor and analyser.
+  * Set source buffer and connect processor and analyser.
   *
   * @return {Object}
   * @private
   */
-  _setSourceNode() {
-    const { audio } = this;
+  _setBufferSourceNode () {
     const { ctx, analyser } = this.state;
+
     return new Promise((resolve, reject) => {
-      let sourceNode = ctx.createMediaElementSource(audio);
+      let sourceNode = ctx.createBufferSource();
+
       sourceNode.connect(analyser);
       sourceNode.connect(ctx.destination);
       sourceNode.onended = () => {
@@ -314,7 +313,7 @@ class Visualizer extends Component {
     return new Promise((resolve, reject) => {
       this.setState({
         gradient: gradient,
-        canvasCtx: ctx,
+        canvasCtx: ctx
       }, () => {
         return resolve();
       });
@@ -333,27 +332,6 @@ class Visualizer extends Component {
     const { onChange } = this.props;
 
     return onChange && onChange.call(this, { status: state });
-  }
-
-  /**
-  * @description
-  * On window resize
-  *
-  * @return {Void}
-  * @private
-  *
-  */
-  _onResize() {
-    this.canvas.width = window.innerWidth / 2;
-    this.canvas.height = window.innerHeight / 2;
-    this._setCanvasStyles().then(() => {
-      this._onRender({
-        renderText: this.state.extensions.renderText,
-        renderTime: this.state.extensions.renderTime
-      });
-    }).catch((error) => {
-      this._onDisplayError(error);
-    });
   }
 
   /**
@@ -383,14 +361,44 @@ class Visualizer extends Component {
   * @private
   */
   _onAudioLoad () {
-    const { canvasCtx, model } = this.state;
+    const { ctx, canvasCtx, model } = this.state;
+    const { canvas } = this.refs;
 
-    canvasCtx.fillText('Loading...', this.canvas.width / 2 + 10, this.canvas.height / 2 - 25);
+    canvasCtx.fillText('Loading...', canvas.width / 2 + 10, canvas.height / 2 - 25);
     this._onChange(STATES[3]);
-    /* TODO: why is the boolean needed? */
-    model === this.state.model && this._onAudioPlay();
+
+    this._httpGet().then((response) => {
+      ctx.decodeAudioData(response, (buffer) => {
+        (model === this.state.model) && this._onAudioPlay(buffer);
+      }, (error) => {
+        this._onDisplayError(error);
+      });
+    });
 
     return this;
+  }
+
+  /**
+  * @description
+  * Http GET method.
+  *
+  * @return {Object}
+  * @private
+  */
+  _httpGet () {
+    const { model } = this.state;
+
+    return new Promise((resolve, reject) => {
+      let req = new XMLHttpRequest();
+      req.open('GET', model.src, true);
+      req.responseType = 'arraybuffer';
+
+      req.onload = () => {
+        return resolve(req.response);
+      };
+
+      req.send();
+    });
   }
 
   /**
@@ -421,18 +429,19 @@ class Visualizer extends Component {
   */
   _onAudioStop () {
     const { canvasCtx, ctx } = this.state;
+    const { canvas } = this.refs;
 
     return new Promise((resolve, reject) => {
       window.cancelAnimationFrame(this.state.animFrameId);
       clearInterval(this.state.interval);
       this.state.sourceNode.disconnect();
-      canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
       this._onChange(STATES[0]);
 
       this._onResetTimer().then(() => {
         ctx.resume();
       }).then(() => {
-        this._setSourceNode();
+        this._setBufferSourceNode();
       }).then(() => {
         this.setState({
           playing: false,
@@ -452,8 +461,7 @@ class Visualizer extends Component {
   * @private
   */
   _onAudioPlay (buffer) {
-    const { audio } = this;
-    const { ctx } = this.state;
+    const { ctx, sourceNode } = this.state;
 
     this.setState({ playing: true }, () => {
       this._onChange(STATES[1]);
@@ -463,10 +471,12 @@ class Visualizer extends Component {
         return this._onRenderFrame();
       }
 
-      audio.play();
+      sourceNode.buffer = buffer;
+      sourceNode.start(0);
       this._onResetTimer().then(() => {
-        this._onStartTimer()
-        this._onRenderFrame();
+        this
+        ._onStartTimer()
+        ._onRenderFrame();
       });
     });
 
@@ -530,6 +540,7 @@ class Visualizer extends Component {
       analyser,
       frequencyData,
       requestAnimationFrame,
+      animFrameId
     } = this.state;
 
     if (this.state.playing) {
@@ -555,8 +566,9 @@ class Visualizer extends Component {
   */
   _onRender (extensions) {
     const { canvasCtx } = this.state;
+    const { canvas } = this.refs;
 
-    canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
     Object.keys(extensions).forEach((extension) => {
       return extensions[extension] &&
       extensions[extension].call(this, this);
@@ -573,9 +585,10 @@ class Visualizer extends Component {
   */
   _onRenderTimeDefault () {
     const { canvasCtx } = this.state;
+    const { canvas } = this.refs;
 
     let time = `${this.state.minutes}:${this.state.seconds}`;
-    canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 40);
+    canvasCtx.fillText(time, canvas.width / 2 + 10, canvas.height / 2 + 40);
     return this;
   }
 
@@ -588,11 +601,13 @@ class Visualizer extends Component {
   * @private
   */
   _onRenderTextDefault () {
-    const { canvasCtx, model } = this.state;
+    const { canvasCtx } = this.state;
+    const { canvas } = this.refs;
+    const { model } = this.state;
     const { font } = this.state.options;
 
-    const cx = this.canvas.width / 2;
-    const cy = this.canvas.height / 2;
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
     const fontAdjustment = 6;
     const alignAdjustment = 8;
 
@@ -616,13 +631,14 @@ class Visualizer extends Component {
   */
   _onRenderStyleDefault () {
     const { frequencyData, canvasCtx } = this.state;
+    const { canvas } = this.refs;
     const { barWidth, barHeight, barSpacing } = this.state.options;
 
     const radiusReduction = 70;
     const amplitudeReduction = 6;
 
-    const cx = this.canvas.width / 2;
-    const cy = this.canvas.height / 2;
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
     const radius = Math.min(cx, cy) - radiusReduction;
     const maxBarNum = Math.floor((radius * 2 * Math.PI) / (barWidth + barSpacing));
     const slicedPercent = Math.floor((maxBarNum * 25) / 100);
@@ -657,18 +673,14 @@ class Visualizer extends Component {
     const classes = classNames('visualizer', className);
 
     return (
-      <div className={classes} onClick={this._onResolvePlayState}>
-        <audio
-          ref={el => this.audio = el}
-          className='visualizer__audio'
-          src={model.src}>
-        </audio>
-        <div className='visualizer__canvas-wrapper'>
+      <div className={ classes } onClick={ this._onResolvePlayState }>
+        <audio className="visualizer__audio" src={ model.src }></audio>
+        <div className="visualizer__canvas-wrapper">
           <canvas
-            ref={el => this.canvas = el}
-            className='visualizer__canvas'
-            width={width}
-            height={height}>
+            ref="canvas"
+            className="visualizer__canvas"
+            width={ width }
+            height={ height }>
           </canvas>
         </div>
       </div>
@@ -683,7 +695,7 @@ Visualizer.propTypes = {
   extensions: PropTypes.object,
   onChange: PropTypes.func,
   width: PropTypes.string,
-  height: PropTypes.string,
+  height: PropTypes.string
 };
 
 export default Visualizer;

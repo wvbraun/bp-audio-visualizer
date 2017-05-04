@@ -4,10 +4,9 @@ import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
 /* TODO: react-key-handler uses deprecated React.PropTypes */
 // import KeyHandler, { KEYDOWN } from 'react-key-handler';
-import AudioVisualizer from './AudioVisualizer';
 import Visualizer from '../common/Visualizer';
 import * as visualizerActions  from '../../actions/visualizerActions';
-import logo from '../logo.svg';
+import logo from '../logo_red.svg';
 
 /*
 const keyHandlers = [
@@ -56,11 +55,16 @@ class VisualizerPage extends Component {
     const options = {
       autoplay: false,
     };
+
+    const width = (window.innerWidth / 2) + 'px'; // 800px
+    const height = (window.innerHeight / 2) + 'px'; // 400px
+    /*
     const extensions = {
       renderStyle: this.onRenderStyle,
       renderText: this.onRenderText,
       renderTime: this.onRenderTime,
     };
+    */
     /*
     const keyHandlers = [
       [' ', this.togglePlayback],
@@ -83,8 +87,8 @@ class VisualizerPage extends Component {
             className="audio-visualizer"
             model={tracks[0]}
             options={options}
-            width="800px"
-            height="400px"
+            width={width}
+            height={height}
           />
         }
       </div>
