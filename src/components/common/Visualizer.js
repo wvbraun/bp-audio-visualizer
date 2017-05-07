@@ -29,6 +29,22 @@ const OPTIONS_DEFAULT = {
   font: ['12px', 'Helvetica']
 };
 
+const secondsToTime = (seconds) => {
+  /*
+  seconds = Math.round(seconds);
+  let ss = seconds % 60;
+  let mm = Math.round(seconds % 60 % 60);
+  let hh = Math.round(seconds % 60 % 60 % 24);
+  //let d = seconds / 60 / 60 / 24;
+  if (hh < 10) {hh = "0"+hh;}
+  if (mm < 10) {mm = "0"+mm;}
+  if (ss < 10) {ss = "0"+ss;}
+  */
+  // new Date(0).toISOString() => "1970-01-01T00:00:00.000Z"
+  const ms = 1000 * seconds
+  return new Date(ms).toISOString().substr(14, 5);
+}
+
 class Visualizer extends Component {
   constructor(props, context) {
     super(props, context);
@@ -75,7 +91,7 @@ class Visualizer extends Component {
   }
 
   componentWillMount () {
-    window.addEventListener('resize', this._onResize, true);
+    //window.addEventListener('resize', this._onResize, true);
     this._setContext().then(() => {
       this._setAnalyser();
     }).then(() => {
@@ -121,25 +137,10 @@ class Visualizer extends Component {
     this.state.ctx.close();
   }
 
-  /**
-  * @description
-  * Display visualizer error.
-  *
-  * @param {Object} error
-  * @return {Function}
-  * @private
-  */
   _onDisplayError (error) {
     return window.console.table(error);
   }
 
-  /**
-  * @description
-  * Extend constructor options.
-  *
-  * @return {Object}
-  * @private
-  */
   _extend () {
     const options = Object.assign(OPTIONS_DEFAULT, this.props.options);
     const extensions = Object.assign({}, this.props.extensions || {
@@ -159,13 +160,6 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * Set canvas context.
-  *
-  * @return {Object}
-  * @private
-  */
   _setCanvasContext () {
     const canvasCtx = this.canvas.getContext('2d');
 
@@ -176,13 +170,6 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * Set audio context.
-  *
-  * @return {Object}
-  * @private
-  */
   _setContext () {
     const error = { message: 'Web Audio API is not supported.' };
 
@@ -198,13 +185,6 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * Set audio buffer analyser.
-  *
-  * @return {Object}
-  * @private
-  */
   _setAnalyser () {
     const { ctx } = this.state;
 
@@ -222,13 +202,6 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * Set frequency data.
-  *
-  * @return {Object}
-  * @private
-  */
   _setFrequencyData () {
     const { analyser } = this.state;
 
@@ -241,16 +214,10 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * Set media source buffer and connect processor and analyser.
-  *
-  * @return {Object}
-  * @private
-  */
   _setSourceNode() {
     const { audio } = this;
     const { ctx, analyser } = this.state;
+
     return new Promise((resolve, reject) => {
       let sourceNode = ctx.createMediaElementSource(audio);
       sourceNode.connect(analyser);
@@ -265,13 +232,6 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * Set request animation frame fn.
-  *
-  * @return {Object}
-  * @private
-  */
   _setRequestAnimationFrame () {
     return new Promise((resolve, reject) => {
       const requestAnimationFrame = (() => {
@@ -289,13 +249,6 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * Set canvas gradient color.
-  *
-  * @return {Object}
-  * @private
-  */
   _setCanvasStyles () {
     const { canvasCtx } = this.state;
     const { barColor, shadowBlur, shadowColor, font } = this.state.options;
@@ -321,31 +274,19 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * On playstate change.
-  *
-  * @param {String} state
-  * @return {Function<Object>}
-  * @private
-  */
   _onChange (state) {
     const { onChange } = this.props;
 
     return onChange && onChange.call(this, { status: state });
   }
 
-  /**
-  * @description
-  * On window resize
-  *
-  * @return {Void}
-  * @private
-  *
-  */
   _onResize() {
-    this.canvas.width = window.innerWidth / 2;
-    this.canvas.height = window.innerHeight / 2;
+    if (this.canvas.width !== window.innerWidth / 2) {
+      this.canvas.width = window.innerWidth / 2;
+    }
+    if (this.canvas.height !== window.innerHeight / 2) {
+      this.canvas.height = window.innerHeight / 2;
+    }
     this._setCanvasStyles().then(() => {
       this._onRender({
         renderText: this.state.extensions.renderText,
@@ -356,13 +297,6 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * Resolve play state.
-  *
-  * @return {Function}
-  * @private
-  */
   _onResolvePlayState () {
     const { ctx } = this.state;
 
@@ -375,13 +309,6 @@ class Visualizer extends Component {
     }
   }
 
-  /**
-  * @description
-  * Load audio file fn.
-  *
-  * @return {Object}
-  * @private
-  */
   _onAudioLoad () {
     const { canvasCtx, model } = this.state;
 
@@ -393,13 +320,6 @@ class Visualizer extends Component {
     return this;
   }
 
-  /**
-  * @description
-  * Audio pause fn.
-  *
-  * @return {Object}
-  * @private
-  */
   _onAudioPause () {
     const { ctx } = this.state;
 
@@ -412,13 +332,6 @@ class Visualizer extends Component {
     return this;
   }
 
-  /**
-  * @description
-  * Audio stop fn.
-  *
-  * @return {Object}
-  * @private
-  */
   _onAudioStop () {
     const { canvasCtx, ctx } = this.state;
 
@@ -444,13 +357,6 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * Audio play fn.
-  *
-  * @return {Object}
-  * @private
-  */
   _onAudioPlay (buffer) {
     const { audio } = this;
     const { ctx } = this.state;
@@ -473,13 +379,6 @@ class Visualizer extends Component {
     return this;
   }
 
-  /**
-  * @description
-  * Reset audio timer fn.
-  *
-  * @return {Object}
-  * @private
-  */
   _onResetTimer () {
     return new Promise((resolve, reject) => {
       this.setState({
@@ -492,13 +391,6 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * Start audio timer fn.
-  *
-  * @return {Object}
-  * @private
-  */
   _onStartTimer () {
     const interval = setInterval(() => {
       if (this.state.playing) {
@@ -518,13 +410,6 @@ class Visualizer extends Component {
     return this;
   }
 
-  /**
-  * @description
-  * Render canvas frame.
-  *
-  * @return {Object}
-  * @private
-  */
   _onRenderFrame () {
     const {
       analyser,
@@ -544,15 +429,6 @@ class Visualizer extends Component {
     return this;
   }
 
-  /**
-  * @description
-  * On render frame fn.
-  * Invoke each of the render extensions.
-  *
-  * @param {Object} extensions
-  * @return {Function}
-  * @private
-  */
   _onRender (extensions) {
     const { canvasCtx } = this.state;
 
@@ -563,30 +439,16 @@ class Visualizer extends Component {
     });
   }
 
-  /**
-  * @description
-  * Render audio time fn.
-  * Default time rendering fn.
-  *
-  * @return {Object}
-  * @private
-  */
   _onRenderTimeDefault () {
+    const { audio } = this;
     const { canvasCtx } = this.state;
 
-    let time = `${this.state.minutes}:${this.state.seconds}`;
+    //let time = `${this.state.minutes}:${this.state.seconds}`;
+    let time = secondsToTime(audio.currentTime);
     canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 40);
     return this;
   }
 
-  /**
-  * @description
-  * Render audio artist and title fn.
-  * Default text rendering fn.
-  *
-  * @return {Object}
-  * @private
-  */
   _onRenderTextDefault () {
     const { canvasCtx, model } = this.state;
     const { font } = this.state.options;
@@ -606,14 +468,6 @@ class Visualizer extends Component {
     return this;
   }
 
-  /**
-  * @description
-  * Render lounge style type.
-  * Default rendering style.
-  *
-  * @return {Object}
-  * @private
-  */
   _onRenderStyleDefault () {
     const { frequencyData, canvasCtx } = this.state;
     const { barWidth, barHeight, barSpacing } = this.state.options;
@@ -648,10 +502,6 @@ class Visualizer extends Component {
     return this;
   }
 
-  /**
-  * @return {Object}
-  * @public
-  */
   render () {
     const { model, className, width, height } = this.props;
     const classes = classNames('visualizer', className);
