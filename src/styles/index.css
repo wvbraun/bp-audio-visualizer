@@ -33,6 +33,19 @@ h4 {
     padding-top: 50px;
 }
 
+.progressContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.5%;
+}
+
+.progress {
+  height: 100%;
+  transition: width 0.2s linear;
+}
+
 .visualizer {
     position: relative;
     width: 100%;

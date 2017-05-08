@@ -6,7 +6,6 @@ const tracks = [
     title: 'Rejoice',
     artist: 'Julien Baker',
     album: 'Sprained Ankled',
-    duration: '00:03:33.800',
   },
 ];
 

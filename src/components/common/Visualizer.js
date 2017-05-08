@@ -26,8 +26,11 @@ const OPTIONS_DEFAULT = {
   barWidth: 2,
   barHeight: 2,
   barSpacing: 7,
-  font: ['12px', 'Helvetica']
+  font: ['12px', 'Helvetica'],
+  textColor: 'rgba(100%, 100%, 100%, 0.8)',
+  altColor: 'rgba(100%, 100%, 100%, 0.1)',
 };
+
 
 const secondsToTime = (seconds) => {
   /*
@@ -49,7 +52,7 @@ class Visualizer extends Component {
   constructor(props, context) {
     super(props, context);
     this.state = {
-      playing: false,
+      isPlaying: false,
       requestAnimationFrame: null,
       animFrameId: null,
       ctx: null,
@@ -60,11 +63,10 @@ class Visualizer extends Component {
       canvasCtx: null,
       interval: null,
       duration: null,
-      minutes: '00',
-      seconds: '00',
       options: OPTIONS_DEFAULT,
       extensions: {},
       model: null,
+      progress: 0
     };
 
     this._extend = this._extend.bind(this);
@@ -300,7 +302,7 @@ class Visualizer extends Component {
   _onResolvePlayState () {
     const { ctx } = this.state;
 
-    if (!this.state.playing) {
+    if (!this.state.isPlaying) {
       return (ctx.state === 'suspended') ?
         this._onAudioPlay() :
         this._onAudioLoad();
@@ -323,7 +325,7 @@ class Visualizer extends Component {
   _onAudioPause () {
     const { ctx } = this.state;
 
-    this.setState({ playing: false }, () => {
+    this.setState({ isPlaying: false }, () => {
       ctx.suspend().then(() => {
         this._onChange(STATES[2]);
       });
@@ -348,7 +350,7 @@ class Visualizer extends Component {
         this._setSourceNode();
       }).then(() => {
         this.setState({
-          playing: false,
+          isPlaying: false,
           animFrameId: null
         }, () => {
           return resolve();
@@ -361,7 +363,7 @@ class Visualizer extends Component {
     const { audio } = this;
     const { ctx } = this.state;
 
-    this.setState({ playing: true }, () => {
+    this.setState({ isPlaying: true }, () => {
       this._onChange(STATES[1]);
 
       if (ctx.state === 'suspended') {
@@ -393,7 +395,7 @@ class Visualizer extends Component {
 
   _onStartTimer () {
     const interval = setInterval(() => {
-      if (this.state.playing) {
+      if (this.state.isPlaying) {
         let now = new Date(this.state.duration);
         let min = now.getHours();
         let sec = now.getMinutes() + 1;
@@ -417,7 +419,7 @@ class Visualizer extends Component {
       requestAnimationFrame,
     } = this.state;
 
-    if (this.state.playing) {
+    if (this.state.isPlaying) {
       const animFrameId = requestAnimationFrame(this._onRenderFrame);
 
       this.setState({ animFrameId }, () => {
@@ -440,12 +442,15 @@ class Visualizer extends Component {
   }
 
   _onRenderTimeDefault () {
-    const { audio } = this;
+    const { audio, canvas } = this;
     const { canvasCtx } = this.state;
 
     //let time = `${this.state.minutes}:${this.state.seconds}`;
     let time = secondsToTime(audio.currentTime);
-    canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 40);
+    if (audio.duration) {
+      this.setState({ progress: audio.currentTime / audio.duration });
+    }
+    canvasCtx.fillText(time, canvas.width / 2 + 10, canvas.height / 2 + 40);
     return this;
   }
 
@@ -503,8 +508,19 @@ class Visualizer extends Component {
   }
 
   render () {
+    const { progress } = this.state;
     const { model, className, width, height } = this.props;
+    const { altColor, textColor } = this.state.options;
     const classes = classNames('visualizer', className);
+
+    const progressStyle = {
+        backgroundColor: textColor,
+        width: `${progress * 100}%`
+    };
+
+    const altStyle = {
+        backgroundColor: altColor
+    }
 
     return (
       <div className={classes} onClick={this._onResolvePlayState}>
@@ -513,6 +529,9 @@ class Visualizer extends Component {
           className='visualizer__audio'
           src={model.src}>
         </audio>
+        <div className="progressContainer" style={altStyle}>
+          <div className="progress" style={progressStyle}></div>
+        </div>
         <div className='visualizer__canvas-wrapper'>
           <canvas
             ref={el => this.canvas = el}

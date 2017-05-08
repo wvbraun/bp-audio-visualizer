@@ -51,13 +51,13 @@ class VisualizerPage extends Component {
   }
 
   render() {
-    const { tracks } = this.props;
+    const { tracks, isPlaying } = this.props;
     const options = {
       autoplay: false,
     };
 
-    const width = (window.innerWidth / 2) + 'px'; // 800px
-    const height = (window.innerHeight / 2) + 'px'; // 400px
+    const width = '800px'; //(window.innerWidth / 2) + 'px'; // 800px
+    const height = '400px'; //(window.innerHeight / 2) + 'px'; // 400px
     /*
     const extensions = {
       renderStyle: this.onRenderStyle,
@@ -106,7 +106,8 @@ function mapStateToProps(state, ownProps) {
   const { visualizer } = state;
   return {
     tracks: visualizer.tracks,
-    currentTrack: visualizer.currentTrack
+    currentTrack: visualizer.currentTrack,
+    isPlaying: visualizer.isPlaying,
   };
 }
 

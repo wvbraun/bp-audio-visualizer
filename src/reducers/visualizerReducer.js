@@ -16,6 +16,11 @@ export default function visualizerReducer(state = initialState.visualizer, actio
         ]
       });
 
+    case types.TOGGLE_PLAYBACK_SUCCESS:
+      return Object.assign({}, state, {
+        isPlaying: !state.isPlaying
+      })
+
     default:
       return state;
   }
