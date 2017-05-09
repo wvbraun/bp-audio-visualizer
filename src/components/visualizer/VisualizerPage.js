@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
 /* TODO: react-key-handler uses deprecated React.PropTypes */
-// import KeyHandler, { KEYDOWN } from 'react-key-handler';
+import KeyHandler, { KEYDOWN } from 'react-key-handler';
 import Visualizer from '../common/Visualizer';
 import * as visualizerActions  from '../../actions/visualizerActions';
 import logo from '../logo_red.svg';
@@ -32,22 +32,27 @@ class VisualizerPage extends Component {
     this.onRenderStyle = this.onRenderStyle.bind(this);
     this.onRenderText = this.onRenderText.bind(this);
     this.onRenderTime = this.onRenderTime.bind(this);
+    this.onTogglePlayback = this.onTogglePlayback.bind(this);
   }
 
   stopPropagation(e) {
     e.stopPropagation();
   }
 
-  onRenderStyle (context) {
+  onRenderStyle(context) {
 
   }
 
-  onRenderText (context) {
+  onRenderText(context) {
 
   }
 
-  onRenderTime (context) {
+  onRenderTime(context) {
 
+  }
+
+  onTogglePlayback() {
+    this.props.actions.togglePlayback();
   }
 
   render() {
@@ -65,9 +70,8 @@ class VisualizerPage extends Component {
       renderTime: this.onRenderTime,
     };
     */
-    /*
     const keyHandlers = [
-      [' ', this.togglePlayback],
+      [' ', this.onTogglePlayback],
     ].map(([key, handler], i) => (
       <KeyHandler
         key={i}
@@ -76,9 +80,8 @@ class VisualizerPage extends Component {
         onKeyHandle={handler}
       />
     ));
-        {keyHandlers}
-    */
 // TODO: fix tracks && logic
+// {keyHandlers}
     return (
       <div className="App">
         <img src={logo} className="App-logo" alt="logo" />
@@ -89,6 +92,7 @@ class VisualizerPage extends Component {
             options={options}
             width={width}
             height={height}
+            onTogglePlayback={this.onTogglePlayback}
           />
         }
       </div>

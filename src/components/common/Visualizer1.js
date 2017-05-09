@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { connect } from "react-redux";
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 
@@ -133,15 +132,7 @@ class Visualizer extends Component {
           this.componentDidMount();
         });
       });
-    } /* else {
-      //console.log(this.props.isPlaying);
-      if (this.props.isPlaying) {
-        this._onAudioPlay(false);
-      } else {
-        this._onAudioPause(false);
-      }
-      //this._onResolvePlayState();
-    } */
+    }
   }
 
   componentWillUnmount () {
@@ -309,23 +300,24 @@ class Visualizer extends Component {
   }
 
   _onResolvePlayState () {
-    const { ctx, isPlaying } = this.state;
+    const { ctx } = this.state;
 
-    if (!this.props.isPlaying) {
-      return this._onAudioPlay();
+    if (!this.state.isPlaying) {
+      return (ctx.state === 'suspended') ?
+        this._onAudioPlay() :
+        this._onAudioLoad();
     } else {
       return this._onAudioPause();
     }
   }
 
   _onAudioLoad () {
-    const { canvasCtx } = this.state;
+    const { canvasCtx, model } = this.state;
 
     canvasCtx.fillText('Loading...', this.canvas.width / 2 + 10, this.canvas.height / 2 - 25);
     this._onChange(STATES[3]);
     /* TODO: why is the boolean needed? */
-    //model === this.state.model && this._onAudioPlay();
-    this._onAudioPlay();
+    model === this.state.model && this._onAudioPlay();
 
     return this;
   }
@@ -333,17 +325,10 @@ class Visualizer extends Component {
   _onAudioPause () {
     const { ctx } = this.state;
 
-    /*
     this.setState({ isPlaying: false }, () => {
       ctx.suspend().then(() => {
         this._onChange(STATES[2]);
       });
-    });
-    */
-
-    this.props.onTogglePlayback();
-    ctx.suspend().then(() => {
-      this._onChange(STATES[2]);
     });
 
     return this;
@@ -364,7 +349,6 @@ class Visualizer extends Component {
       }).then(() => {
         this._setSourceNode();
       }).then(() => {
-        this.props.onTogglePlayback();
         this.setState({
           isPlaying: false,
           animFrameId: null
@@ -375,26 +359,10 @@ class Visualizer extends Component {
     });
   }
 
-  _onAudioPlay () {
+  _onAudioPlay (buffer) {
+    const { audio } = this;
     const { ctx } = this.state;
 
-    Promise.resolve().then(() => {
-      this.props.onTogglePlayback();
-    }).then(() => {
-      this._onChange(STATES[1]);
-
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-        return this._onRenderFrame();
-      }
-
-      this.audio.play();
-      this._onResetTimer().then(() => {
-        this._onStartTimer()
-        this._onRenderFrame();
-      });
-    });
-    /*
     this.setState({ isPlaying: true }, () => {
       this._onChange(STATES[1]);
 
@@ -409,7 +377,6 @@ class Visualizer extends Component {
         this._onRenderFrame();
       });
     });
-    */
 
     return this;
   }
@@ -428,7 +395,7 @@ class Visualizer extends Component {
 
   _onStartTimer () {
     const interval = setInterval(() => {
-      if (this.props.isPlaying) {
+      if (this.state.isPlaying) {
         let now = new Date(this.state.duration);
         let min = now.getHours();
         let sec = now.getMinutes() + 1;
@@ -452,7 +419,7 @@ class Visualizer extends Component {
       requestAnimationFrame,
     } = this.state;
 
-    if (this.props.isPlaying) {
+    if (this.state.isPlaying) {
       const animFrameId = requestAnimationFrame(this._onRenderFrame);
 
       this.setState({ animFrameId }, () => {
@@ -542,7 +509,7 @@ class Visualizer extends Component {
 
   render () {
     const { progress } = this.state;
-    const { model, className, width, height, onTogglePlayback } = this.props;
+    const { model, className, width, height } = this.props;
     const { altColor, textColor } = this.state.options;
     const classes = classNames('visualizer', className);
 
@@ -584,18 +551,8 @@ Visualizer.propTypes = {
   className: PropTypes.string,
   extensions: PropTypes.object,
   onChange: PropTypes.func,
-  onTogglePlayback: PropTypes.func,
   width: PropTypes.string,
   height: PropTypes.string,
 };
 
-function mapStateToProps(state, ownProps) {
-  const { visualizer } = state;
-  return {
-    tracks: visualizer.tracks,
-    currentTrack: visualizer.currentTrack,
-    isPlaying: visualizer.isPlaying,
-  };
-}
-
-export default connect(mapStateToProps)(Visualizer);
+export default Visualizer;

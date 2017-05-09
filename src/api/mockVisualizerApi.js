@@ -24,6 +24,7 @@ class VisualizerApi {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
           tracks.push(track);
+          resolve(track);
         }, delay);
     });
   }
