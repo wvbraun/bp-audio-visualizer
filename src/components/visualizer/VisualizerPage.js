@@ -85,10 +85,10 @@ class VisualizerPage extends Component {
     return (
       <div className="App">
         <img src={logo} className="App-logo" alt="logo" />
-        {tracks[0] &&
+        {tracks[1] &&
           <Visualizer
             className="audio-visualizer"
-            model={tracks[0]}
+            model={tracks[1]}
             options={options}
             width={width}
             height={height}

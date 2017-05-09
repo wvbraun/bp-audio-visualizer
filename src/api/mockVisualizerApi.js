@@ -7,6 +7,12 @@ const tracks = [
     artist: 'Julien Baker',
     album: 'Sprained Ankled',
   },
+  {
+    src: 'http://localhost:8080/audio/Paris.mp3',
+    title: 'PARIS',
+    artist: 'LE SINNER',
+    album: '',
+  },
 ];
 
 class VisualizerApi {
