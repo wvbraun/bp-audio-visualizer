@@ -1,11 +1,15 @@
 * {
-  box-sizing: border-box;
+  /* box-sizing: border-box; */
 }
 
 /*
  logo_red: #c3383b
  logo_red2: #df2f39ff
 */
+
+html {
+  display: block;
+}
 
 body {
   margin: 0;
@@ -14,6 +18,7 @@ body {
   font-size: 14px;
   background: #000;
   color: #fff;
+  overflow: hidden;
 }
 
 h3, h4 {

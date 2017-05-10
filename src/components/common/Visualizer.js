@@ -60,7 +60,10 @@ class Visualizer extends Component {
       analyser: null,
       frequencyData: 0,
       sourceNode: null,
-      gradient: null,
+      gradient: {
+        foregoundGradient: null,
+        backgroundGradient: null,
+      },
       canvasCtx: {
         foregroundCtx: null,
         particleCtx: null,
@@ -253,28 +256,46 @@ class Visualizer extends Component {
   }
 
   _setCanvasStyles = () => {
+    const { width, height } = this.backgroundCanvas;
     const { canvasCtx } = this.state;
     const { foregroundCtx, particleCtx, backgroundCtx } = canvasCtx;
     const { barColor, shadowBlur, shadowColor, font } = this.state.options;
 
-    let gradient = foregroundCtx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(1, barColor);
+    let foregroundGradient = foregroundCtx.createLinearGradient(0, 0, 0, 300);
+    foregroundGradient.addColorStop(1, barColor);
 
-    const ctx = Object.assign(foregroundCtx, {
-      fillStyle: gradient,
+    const volume = this.audio.volume / 1000;
+    const r = Math.round(200 + (Math.sin(volume) + 1) * 28);
+    const g = Math.round(volume * 2);
+    const b = Math.round(volume * 8);
+    const a = 0.4; // 1 + Math.sin(volume + 3 * Math.PI/2);
+
+    let backgroundGradient = backgroundCtx.createRadialGradient(width/2, height/2, volume, width/2, height/2, width-Math.min(Math.pow(volume, 2.7), width-20));
+    backgroundGradient.addColorStop(0, 'rgba(0,0,0,0)');
+    backgroundGradient.addColorStop(0.8,`rgba(${r}, ${g}, ${b}, ${a})`);
+
+    const fgCtx = Object.assign(foregroundCtx, {
+      fillStyle: foregroundGradient,
       shadowBlur: shadowBlur,
       shadowColor: shadowColor,
       font: font.join(' '),
       textAlign: 'center'
     });
 
+    const bgCtx = Object.assign(backgroundCtx, {
+      fillStyle: backgroundGradient,
+    });
+
     return new Promise((resolve, reject) => {
       this.setState({
-        gradient: gradient,
+        gradient: {
+          foregroundGradient,
+          backgroundGradient,
+        },
         canvasCtx: {
           particleCtx,
-          backgroundCtx,
-          foregroundCtx: ctx,
+          foregroundCtx: fgCtx,
+          backgroundCtx: bgCtx,
         },
       }, () => {
         return resolve();
@@ -296,9 +317,9 @@ class Visualizer extends Component {
   _setParticles = () => {
     const { width, height } = this.backgroundCanvas;
     const n = Math.round(width / 15);
-    let particles = [];
 
     return new Promise((resolve, reject) => {
+      let particles = [];
       [...Array(n).keys()].map(i => {
         return particles.push(this._createParticle({
           x: (Math.random() - 0.5) * width,
@@ -427,12 +448,14 @@ class Visualizer extends Component {
       this._onRenderFrame();
     });
 
+
     return this;
   }
 
   _onRenderFrame = (init) => {
     const {
       analyser,
+      extensions,
       frequencyData,
       requestAnimationFrame,
     } = this.state;
@@ -442,7 +465,7 @@ class Visualizer extends Component {
 
       this.setState({ animFrameId }, () => {
         analyser.getByteFrequencyData(frequencyData);
-        this._onRender(this.state.extensions);
+        this._onRender(extensions);
       });
     }
 
@@ -450,9 +473,9 @@ class Visualizer extends Component {
   }
 
   _onRender = (extensions) => {
-    const { foregroundCanvas, particleCanvas, backgroundCanvas } = this;
     const { canvasCtx } = this.state;
     const { foregroundCtx, particleCtx, backgroundCtx } = canvasCtx;
+    const { foregroundCanvas, particleCanvas, backgroundCanvas } = this;
 
     foregroundCtx.clearRect(
       -foregroundCanvas.width,
@@ -478,10 +501,11 @@ class Visualizer extends Component {
 
   _onRenderTimeDefault = () => {
     const { audio, foregroundCanvas } = this;
+    const { width, height } = foregroundCanvas;
     const { foregroundCtx } = this.state.canvasCtx;
 
-    const cx = foregroundCanvas.width / 2;
-    const cy = foregroundCanvas.height / 4;
+    const cx = width / 2;
+    const cy = height / 4;
 
     let time = secondsToTime(audio.currentTime);
     if (audio.duration) {
@@ -512,20 +536,14 @@ class Visualizer extends Component {
     return this;
   }
 
-  _onRenderCircle = () => {
-
-  }
-
-  _drawParticle = (particle) => {
+  _drawParticle = (particle, canvasCtx) => {
     const { width, height } = this.backgroundCanvas;
-    const { particleCtx } = this.state.canvasCtx;
     let { x, y, size, angle, high } = particle;
 
     const distanceFromOrigin = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
     const brightness = Math.min(Math.round(high * 5), 55) + 200;
-    const lengthFactor = 1 + Math.min(
-      (Math.pow(distanceFromOrigin,2)/30000) * (Math.pow(this.audio.volume,2)/6000000),
-      distanceFromOrigin);
+    const distanceVolume = (Math.pow(distanceFromOrigin,2)/30000) * (Math.pow(this.audio.volume,2)/6000000);
+    const lengthFactor = 1 + Math.min(distanceVolume, distanceFromOrigin);
 
     let toX = Math.cos(angle) * -lengthFactor;
     let toY = Math.sin(angle) * -lengthFactor;
@@ -533,13 +551,13 @@ class Visualizer extends Component {
     toY = y > 0 ? toY : toY * -1;
 
     // Draw particles as lines
-    particleCtx.lineWidth = (distanceFromOrigin/2000) * Math.max(size/2, 1) + 0.5;
-    particleCtx.strokeStyle = `rgba(${brightness}, ${brightness}, ${brightness}, 1)`;
-    particleCtx.beginPath();
-    particleCtx.moveTo(x, y);
-    particleCtx.lineTo(x + toX, y + toY);
-    particleCtx.stroke();
-    particleCtx.closePath();
+    canvasCtx.lineWidth = 0.5 + (distanceFromOrigin/2000) * Math.max(size/2, 1);
+    canvasCtx.strokeStyle = `rgba(${brightness}, ${brightness}, ${brightness}, 1)`;
+    canvasCtx.beginPath();
+    canvasCtx.moveTo(x, y);
+    canvasCtx.lineTo(x + toX, y + toY);
+    canvasCtx.stroke();
+    canvasCtx.closePath();
 
     // Particle movement towards camera
     const speed = (lengthFactor / 20) * size;
@@ -572,60 +590,82 @@ class Visualizer extends Component {
   }
 
   _onRenderParticles = () => {
-    const { width, height } = this.backgroundCanvas;
-    let particles = Object.assign([], this.state.particles);
-
-    console.log('start: ');
-    console.log(particles);
-
-    particles.map((particle, i) => {
-      return particles[i] = this._drawParticle(particle);
-    });
-
-    console.log('end: ');
-    console.log(particles);
+    const { particleCtx } = this.state.canvasCtx;
 
     return new Promise((resolve, reject) => {
+      let particles = Object.assign([], this.state.particles);
+      particles.map((particle, i) => {
+        return particles[i] = this._drawParticle(particle, particleCtx);
+      });
       this.setState({ particles }, () => {
         return resolve();
       });
     });
   }
 
-  _onRenderStyleDefault = () => {
-    const { foregroundCanvas } = this;
-    const { frequencyData, canvasCtx } = this.state;
+  _drawFreqBar = (freq, canvasCtx) => {
+    const { angle, tx, ty, x, y, w, h } = freq;
+
+    canvasCtx.save();
+    canvasCtx.translate(tx, ty);
+    canvasCtx.rotate(angle);
+    canvasCtx.fillRect(x, y, w, h);
+    canvasCtx.restore();
+  }
+
+  _onRenderFreqBars = () => {
+    const { width, height } = this.foregroundCanvas;
+    const { frequencyData, canvasCtx, options } = this.state;
     const { foregroundCtx } = canvasCtx;
-    const { barWidth, barHeight, barSpacing } = this.state.options;
+    const { barWidth, barHeight, barSpacing } = options;
 
     const radiusReduction = 70;
     const amplitudeReduction = 6;
 
-    this._onRenderParticles();
-
-    const cx = foregroundCanvas.width / 2;
-    const cy = foregroundCanvas.height / 4;
+    const cx = width / 2;
+    const cy = height / 4;
     const radius = Math.min(cx, cy) - radiusReduction;
     const maxBarNum = Math.floor((radius * 2 * Math.PI) / (barWidth + barSpacing));
     const slicedPercent = Math.floor((maxBarNum * 25) / 100);
     const barNum = maxBarNum - slicedPercent;
     const freqJump = Math.floor(frequencyData.length / maxBarNum);
 
-    for (let i = 0; i < barNum; i++) {
+    [...Array(barNum).keys()].map(i => {
       const amplitude = frequencyData[i * freqJump];
       const theta = (i * 2 * Math.PI ) / maxBarNum;
       const delta = (3 * 45 - barWidth) * Math.PI / 180;
-      const x = 0;
-      const y = radius - (amplitude / 12 - barHeight);
-      const w = barWidth;
-      const h = amplitude / amplitudeReduction + barHeight;
+      const freq = {
+        angle: theta - delta,
+        tx: cx + barSpacing,
+        ty: cy + barSpacing,
+        x: 0,
+        y: radius - (amplitude / 12 - barHeight),
+        w: barWidth,
+        h: amplitude / amplitudeReduction + barHeight,
+      };
 
-      foregroundCtx.save();
-      foregroundCtx.translate(cx + barSpacing, cy + barSpacing);
-      foregroundCtx.rotate(theta - delta);
-      foregroundCtx.fillRect(x, y, w, h);
-      foregroundCtx.restore();
-    }
+      return this._drawFreqBar(freq, foregroundCtx);
+    });
+
+    return Promise.resolve();
+  }
+
+  _onRenderBackground = () => {
+    const { width, height } = this.backgroundCanvas;
+    const { backgroundCtx } = this.state.canvasCtx;
+
+    //backgroundCtx.clearRect(0, 0, width, height);
+    backgroundCtx.fillRect(0, 0, width, height);
+
+    return Promise.resolve();
+  }
+
+  _onRenderStyleDefault = () => {
+    this._onRenderParticles().then(() => {
+      this._onRenderFreqBars();
+    }).then(() => {
+      this._onRenderBackground();
+    });
 
     return this;
   }
