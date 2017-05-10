@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
@@ -27,31 +28,25 @@ const keyHandlers = [
 class VisualizerPage extends Component {
   constructor(props, context) {
     super(props, context);
-
-    this.stopPropagation = this.stopPropagation.bind(this);
-    this.onRenderStyle = this.onRenderStyle.bind(this);
-    this.onRenderText = this.onRenderText.bind(this);
-    this.onRenderTime = this.onRenderTime.bind(this);
-    this.onTogglePlayback = this.onTogglePlayback.bind(this);
   }
 
-  stopPropagation(e) {
+  stopPropagation = (e) => {
     e.stopPropagation();
   }
 
-  onRenderStyle(context) {
+  onRenderStyle = (context) => {
 
   }
 
-  onRenderText(context) {
+  onRenderText = (context) => {
 
   }
 
-  onRenderTime(context) {
+  onRenderTime = (context) => {
 
   }
 
-  onTogglePlayback() {
+  onTogglePlayback = () => {
     this.props.actions.togglePlayback();
   }
 
@@ -61,8 +56,8 @@ class VisualizerPage extends Component {
       autoplay: false,
     };
 
-    const width = '800px'; //(window.innerWidth / 2) + 'px'; // 800px
-    const height = '400px'; //(window.innerHeight / 2) + 'px'; // 400px
+    const width = '1425px'; //`${document.documentElement.clientWidth}px`; // 800px
+    const height = '740px'; //`${document.documentElement.clientHeight}px`; // 400px
     /*
     const extensions = {
       renderStyle: this.onRenderStyle,
