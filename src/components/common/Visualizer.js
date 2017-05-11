@@ -315,15 +315,18 @@ class Visualizer extends Component {
   }
 
   _setParticles = () => {
-    const { width, height } = this.backgroundCanvas;
+    const { width, height } = this.particleCanvas;
     const n = Math.round(width / 15);
 
     return new Promise((resolve, reject) => {
       let particles = [];
       [...Array(n).keys()].map(i => {
+        //let x = (Math.random()) * width;
+        //let y = (Math.random()) * height;
+        //console.log(`${x}, ${y}`);
         return particles.push(this._createParticle({
-          x: (Math.random() - 0.5) * width,
-          y: (Math.random() - 0.5) * height,
+          x: Math.random() * width,
+          y: Math.random() * height,
           size: (Math.random() + 0.1) * 3,
         }));
       });
@@ -409,8 +412,9 @@ class Visualizer extends Component {
       foregroundCanvas.height * 2);
 
     particleCtx.clearRect(
-      -particleCanvas.width / 2,
-      -particleCanvas.height / 2,
+      //-particleCanvas.width / 2,
+      //-particleCanvas.height / 2,
+      0, 0,
       particleCanvas.width,
       particleCanvas.height);
 
@@ -478,14 +482,16 @@ class Visualizer extends Component {
     const { foregroundCanvas, particleCanvas, backgroundCanvas } = this;
 
     foregroundCtx.clearRect(
-      -foregroundCanvas.width,
-      -foregroundCanvas.height,
+      //-foregroundCanvas.width,
+      //-foregroundCanvas.height,
+      0, 0,
       foregroundCanvas.width * 2,
       foregroundCanvas.height * 2);
 
     particleCtx.clearRect(
-      -particleCanvas.width / 2,
-      -particleCanvas.height / 2,
+      //-particleCanvas.width / 2,
+      //-particleCanvas.height / 2,
+      0, 0,
       particleCanvas.width,
       particleCanvas.height);
 
@@ -536,26 +542,41 @@ class Visualizer extends Component {
     return this;
   }
 
-  _drawParticle = (particle, canvasCtx) => {
-    const { width, height } = this.backgroundCanvas;
+  _drawParticle = (i, particle, canvasCtx) => {
+    const { width, height } = this.particleCanvas;
     let { x, y, size, angle, high } = particle;
+
 
     const distanceFromOrigin = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
     const brightness = Math.min(Math.round(high * 5), 55) + 200;
     const distanceVolume = (Math.pow(distanceFromOrigin,2)/30000) * (Math.pow(this.audio.volume,2)/6000000);
-    const lengthFactor = 1 + Math.min(distanceVolume, distanceFromOrigin);
+    //const distanceVolume = (Math.pow(distanceFromOrigin,2)/300) * (Math.pow(this.audio.volume,2));
+    const lengthFactor = 1 + distanceVolume; //Math.min(distanceVolume, distanceFromOrigin);
+
 
     let toX = Math.cos(angle) * -lengthFactor;
     let toY = Math.sin(angle) * -lengthFactor;
-    toX = x > 0 ? toX : toX * -1;
-    toY = y > 0 ? toY : toY * -1;
+    toX = x > 0 ? x + toX : x + -toX;
+    toY = y > 0 ? y + toY : y + -toY;
+
+/*
+    if (i === 10) {
+      console.log(`(${x}, ${y}) to (${toX}, ${toY})`);
+    }
+    */
 
     // Draw particles as lines
-    canvasCtx.lineWidth = 0.5 + (distanceFromOrigin/2000) * Math.max(size/2, 1);
-    canvasCtx.strokeStyle = `rgba(${brightness}, ${brightness}, ${brightness}, 1)`;
+    //canvasCtx.lineWidth = 0.5 + (distanceFromOrigin/2000) * Math.max(size/2, 1);
+    //canvasCtx.strokeStyle = `rgba(${brightness}, ${brightness}, ${brightness}, 1)`;
+
+    canvasCtx = Object.assign(canvasCtx, {
+      lineWidth: 0.5 + (distanceFromOrigin/2000) * Math.max(size/2, 1),
+      strokeStyle: `rgba(${brightness}, ${brightness}, ${brightness}, 1)`,
+    });
+
     canvasCtx.beginPath();
     canvasCtx.moveTo(x, y);
-    canvasCtx.lineTo(x + toX, y + toY);
+    canvasCtx.lineTo(toX, toY);
     canvasCtx.stroke();
     canvasCtx.closePath();
 
@@ -571,14 +592,41 @@ class Visualizer extends Component {
     x += x > 0 ? dx : -dx;
     y += y > 0 ? dy : -dy;
 
-    const maxX = (width / 2) + 500;
-    const maxY = (height / 2) + 500;
+    /*
+    const maxX = (width / 2); //+ 500;
+    const maxY = (height / 2); //+ 500;
     // it has gone off the edge so respawn it somewhere near the middle.
-    if ((y > maxY || y < -maxY) || (x > maxX || x < -maxX)) {
+    //if ((y > maxY || y < -maxY) || (x > maxX || x < -maxX)) {
+    //if ((x > width || x < 0) || (y > height || y < 0)) {
       x = (Math.random() - 0.5) * (width / 3);
       y = (Math.random() - 0.5) * (height / 3);
       angle = Math.atan(Math.abs(y) / Math.abs(x));
     }
+    */
+
+
+    if (x > width) {
+      x = 10;
+    }
+    /*
+    if (x < 0) {
+      x = 0;
+    }
+    */
+    if (y > height) { y = 10; }
+    /*
+    if (y < 0) {
+      y = 10; //height - 10;
+    }
+    */
+
+    /*
+    this.setState({ canvasCtx: {
+      foregroundCtx,
+      backgroundCtx,
+      particleCtx: canvasCtx,
+    }});
+    */
 
     return {
       x,
@@ -595,7 +643,7 @@ class Visualizer extends Component {
     return new Promise((resolve, reject) => {
       let particles = Object.assign([], this.state.particles);
       particles.map((particle, i) => {
-        return particles[i] = this._drawParticle(particle, particleCtx);
+        return particles[i] = this._drawParticle(i, particle, particleCtx);
       });
       this.setState({ particles }, () => {
         return resolve();
@@ -661,13 +709,12 @@ class Visualizer extends Component {
   }
 
   _onRenderStyleDefault = () => {
-    this._onRenderParticles().then(() => {
-      this._onRenderFreqBars();
-    }).then(() => {
-      this._onRenderBackground();
+    return new Promise((resolve, reject) => {
+      this._onRenderParticles()
+      .then(this._onRenderFreqBars)
+      //.then(this._onRenderBackground)
+      .then(resolve);
     });
-
-    return this;
   }
 
   render () {

@@ -1,10 +1,9 @@
 import React, { Component } from 'react';
-import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
 /* TODO: react-key-handler uses deprecated React.PropTypes */
-import KeyHandler, { KEYDOWN } from 'react-key-handler';
+//import KeyHandler, { KEYDOWN } from 'react-key-handler';
 import Visualizer from '../common/Visualizer';
 import * as visualizerActions  from '../../actions/visualizerActions';
 import logo from '../logo_red.svg';
@@ -26,10 +25,6 @@ const keyHandlers = [
 */
 
 class VisualizerPage extends Component {
-  constructor(props, context) {
-    super(props, context);
-  }
-
   stopPropagation = (e) => {
     e.stopPropagation();
   }
@@ -51,12 +46,12 @@ class VisualizerPage extends Component {
   }
 
   render() {
-    const { tracks, isPlaying } = this.props;
+    const { tracks } = this.props;
     const options = {
       autoplay: false,
     };
 
-    const width = '1425px'; //`${document.documentElement.clientWidth}px`; // 800px
+    const width = '1440px'; //`${document.documentElement.clientWidth}px`; // 800px
     const height = '740px'; //`${document.documentElement.clientHeight}px`; // 400px
     /*
     const extensions = {
@@ -64,7 +59,6 @@ class VisualizerPage extends Component {
       renderText: this.onRenderText,
       renderTime: this.onRenderTime,
     };
-    */
     const keyHandlers = [
       [' ', this.onTogglePlayback],
     ].map(([key, handler], i) => (
@@ -75,6 +69,7 @@ class VisualizerPage extends Component {
         onKeyHandle={handler}
       />
     ));
+    */
 // TODO: fix tracks && logic
 // {keyHandlers}
     return (
